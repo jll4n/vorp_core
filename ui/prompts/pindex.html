@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>jll4n - Prompts</title>
+        <link rel="stylesheet" href="pstyles.css">
+    </head>
+<body>
+    <button class="button" id="promptButton">
+        <span class="buttonText" id="promptControl"></span>
+    </button>
+</body>
+<script>
+    let controlKey = null;
+    let holdMode = false;
+    let holdDuration = 2000; // 2 secondes en ms
+    let isHolding = false;
+
+    window.addEventListener('message', function(event) {
+        let data = event.data;
+
+        if (data.type === "prompt" && data.action === "open") {
+            document.body.style.display = "block";
+            document.getElementById('promptControl').innerText = data.data.control;
+            document.querySelector('.button').style.setProperty('--button-text', `"${data.data.text}"`);
+            
+            holdMode = data.data.holdMode || false;
+            controlKey = data.data.control.toLowerCase();
+        }
+    });
+
+    // Écouter les touches du clavier
+    document.addEventListener('keydown', function(event) {
+        if (event.key.toLowerCase() === controlKey && !isHolding) {
+            document.querySelector('.button').classList.add('active');
+            isHolding = true;
+
+            if (holdMode) {
+                // Mode Hold : dégradé de couleur
+                let startTime = Date.now();
+                let progressInterval = setInterval(function() {
+                    let elapsed = Date.now() - startTime;
+                    let progress = Math.min((elapsed / holdDuration) * 100, 100);
+
+                    // Interpoler entre deux couleurs
+                    let color = interpolateColor(progress);
+                    document.getElementById('promptButton').style.setProperty('--gradient-progress', progress);
+                    document.getElementById('promptButton').style.setProperty('--progress-color', color);
+
+                    if (progress >= 100) {
+                        clearInterval(progressInterval);
+                        validatePrompt();
+                    }
+                }, 10);
+
+                // Stopper si l'utilisateur relâche
+                document.addEventListener('keyup', function stopHold(e) {
+                    if (e.key.toLowerCase() === controlKey) {
+                        clearInterval(progressInterval);
+                        document.removeEventListener('keyup', stopHold);
+                    }
+                });
+            }
+        }
+    });
+
+    document.addEventListener('keyup', function(event) {
+        if (event.key.toLowerCase() === controlKey) {
+            document.querySelector('.button').classList.remove('active');
+            isHolding = false;
+
+            // Réinitialiser le gradient
+            document.getElementById('promptButton').style.setProperty('--gradient-progress', 0);
+
+            // Mode normal : validation à la relâche
+            if (!holdMode) {
+                validatePrompt();
+            }
+        }
+    });
+
+    function interpolateColor(progress) {
+        // Couleur de départ (gris) vers couleur finale (bleu)
+        let startColor = { r: 100, g: 100, b: 100 }; // Gris
+        let endColor = { r: 72, g: 219, b: 251 };    // Bleu
+
+        let r = Math.round(startColor.r + (endColor.r - startColor.r) * (progress / 100));
+        let g = Math.round(startColor.g + (endColor.g - startColor.g) * (progress / 100));
+        let b = Math.round(startColor.b + (endColor.b - startColor.b) * (progress / 100));
+
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function validatePrompt() {
+        fetch(`http://cfx_internal/closePrompt`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                success: true,
+                action: 'confirmed'
+            })
+        });
+    }
+</script>
+</html>
