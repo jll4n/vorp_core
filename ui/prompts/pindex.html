@@ -14,7 +14,7 @@
 <script>
     let controlKey = null;
     let holdMode = false;
-    let holdDuration = 2000; // 2 secondes en ms
+    let holdDuration = 2000;
     let isHolding = false;
 
     window.addEventListener('message', function(event) {
@@ -30,20 +30,17 @@
         }
     });
 
-    // Écouter les touches du clavier
     document.addEventListener('keydown', function(event) {
         if (event.key.toLowerCase() === controlKey && !isHolding) {
             document.querySelector('.button').classList.add('active');
             isHolding = true;
 
             if (holdMode) {
-                // Mode Hold : dégradé de couleur
                 let startTime = Date.now();
                 let progressInterval = setInterval(function() {
                     let elapsed = Date.now() - startTime;
                     let progress = Math.min((elapsed / holdDuration) * 100, 100);
 
-                    // Interpoler entre deux couleurs
                     let color = interpolateColor(progress);
                     document.getElementById('promptButton').style.setProperty('--gradient-progress', progress);
                     document.getElementById('promptButton').style.setProperty('--progress-color', color);
@@ -70,10 +67,8 @@
             document.querySelector('.button').classList.remove('active');
             isHolding = false;
 
-            // Réinitialiser le gradient
             document.getElementById('promptButton').style.setProperty('--gradient-progress', 0);
 
-            // Mode normal : validation à la relâche
             if (!holdMode) {
                 validatePrompt();
             }
@@ -81,7 +76,6 @@
     });
 
     function interpolateColor(progress) {
-        // Couleur de départ (gris) vers couleur finale (bleu)
         let startColor = { r: 100, g: 100, b: 100 }; // Gris
         let endColor = { r: 72, g: 219, b: 251 };    // Bleu
 
